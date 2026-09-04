@@ -1,0 +1,190 @@
+html {
+  font-size: calc(16px * var(--scale, 1));
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: #000;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  line-height: 1.5;
+}
+
+#page {
+  max-width: var(--width, 46rem);
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 4rem;
+}
+
+a { color: #0000ee; }
+a:visited { color: #551a8b; }
+a:focus { outline: 1px dotted #000; outline-offset: 1px; }
+
+.prefs {
+  font-size: 0.8rem;
+  text-align: right;
+  margin: 0 0 1rem;
+  line-height: 1.7;
+}
+.prefs a[aria-pressed="true"] { color: #000; text-decoration: none; font-weight: bold; }
+
+h1 {
+  font-size: 1.7rem;
+  font-weight: bold;
+  text-align: center;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.authors { text-align: center; margin: 0 0 0.25rem; }
+.affil { text-align: center; margin: 0 0 0.75rem; font-size: 0.92rem; }
+.links { text-align: center; margin: 0 0 1.25rem; }
+
+.teaser { text-align: center; margin: 0 0 0.5rem; }
+.teaser img { width: 160px; height: 160px; border: 1px solid #000; }
+
+hr {
+  border: 0;
+  border-top: 1px solid #000;
+  margin: 1.75rem 0;
+}
+
+h2 {
+  font-size: 1.22rem;
+  font-weight: bold;
+  margin: 1.75rem 0 0.6rem;
+}
+h2:focus { outline: none; }
+
+h3 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 1.3rem 0 0.4rem;
+}
+
+p { margin: 0 0 0.8rem; }
+ul, ol { margin: 0 0 0.8rem; padding-left: 1.6rem; }
+li { margin: 0 0 0.25rem; }
+
+.contents ol { margin: 0.25rem 0 0; padding-left: 1.8rem; }
+.contents li { margin: 0 0 0.1rem; }
+
+section { scroll-margin-top: 0.75rem; }
+section:focus { outline: none; }
+
+.top { font-size: 0.8rem; margin: 0.25rem 0 0; }
+
+.figure {
+  margin: 1.1rem 0 1.3rem;
+  text-align: center;
+}
+.figure img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #000;
+  vertical-align: bottom;
+}
+.figure .scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.figure .scroll img { max-width: none; width: 100%; min-width: 40rem; }
+.caption {
+  font-size: 0.86rem;
+  text-align: left;
+  margin: 0.4rem auto 0;
+  max-width: 42rem;
+}
+
+.tablewrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0.6rem 0 1rem;
+}
+table {
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  border: 1px solid #000;
+}
+caption {
+  text-align: left;
+  font-size: 0.86rem;
+  padding: 0 0 0.3rem;
+}
+th, td {
+  border: 1px solid #000;
+  padding: 0.25rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: #e6e6e6; font-weight: bold; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+
+pre, code, .eq, .readout, input[type="text"] {
+  font-family: "Courier New", Courier, monospace;
+}
+code { font-size: 0.9em; }
+pre {
+  background: #f2f2f2;
+  border: 1px solid #aaa;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 0.5rem 0 1rem;
+}
+.eq {
+  font-size: 0.86rem;
+  margin: 0.6rem 0 0.9rem 1.5rem;
+  overflow-x: auto;
+}
+
+.demo {
+  border: 1px solid #000;
+  padding: 0.7rem 0.8rem;
+  margin: 0.6rem 0 1rem;
+}
+.demo form { margin: 0 0 0.6rem; }
+.demo label { margin-right: 0.6rem; white-space: nowrap; }
+.demo input[type="text"] { font-size: 0.86rem; width: 15rem; max-width: 100%; }
+.stage { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; }
+.stage canvas { border: 1px solid #000; width: 240px; max-width: 100%; height: auto; background: #fff; }
+.readout { font-size: 0.78rem; line-height: 1.7; flex: 1 1 14rem; min-width: 0; }
+.readout table { border: 0; }
+.readout td { border: 0; border-bottom: 1px dotted #999; padding: 0.05rem 1rem 0.05rem 0; }
+
+.refs { padding-left: 1.6rem; }
+.refs li { margin-bottom: 0.4rem; }
+
+.foot { font-size: 0.8rem; margin-top: 2rem; }
+
+#jump {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.6rem;
+  font-size: 0.78rem;
+  background: #fff;
+  border: 1px solid #000;
+  padding: 0.1rem 0.45rem;
+  display: none;
+  z-index: 5;
+}
+#jump[data-show="1"] { display: block; }
+
+@media (max-width: 40rem) {
+  html { font-size: calc(15px * var(--scale, 1)); }
+  #page { padding: 0.9rem 0.85rem 3rem; }
+  .prefs { text-align: left; }
+  .figure .scroll img { min-width: 34rem; }
+  .stage { flex-direction: column; }
+  .demo input[type="text"] { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+@media print {
+  .prefs, .demo, #jump, .top { display: none; }
+  a { color: #000; }
+}

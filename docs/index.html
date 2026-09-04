@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>actual-fingerprints: deterministic synthetic fingerprints from a seed</title>
+<meta name="description" content="A dependency free library that grows human fingerprints from a seed string. Orientation fields, Gabor ridge growth, minutiae extraction and matching, with figures and a live demo.">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+<script>
+(function () {
+  try {
+    var p = JSON.parse(localStorage.getItem('af-prefs') || '{}')
+    var s = { smaller: 0.9, normal: 1, larger: 1.15 }[p.size] || 1
+    var w = { narrow: '38rem', normal: '46rem', wide: '58rem' }[p.width] || '46rem'
+    document.documentElement.style.setProperty('--scale', s)
+    document.documentElement.style.setProperty('--width', w)
+  } catch (e) {}
+})()
+</script>
+</head>
+<body>
+<div id="page">
+
+<p class="prefs">
+  Text size:
+  <a href="#" data-key="size" data-value="smaller">smaller</a> |
+  <a href="#" data-key="size" data-value="normal">normal</a> |
+  <a href="#" data-key="size" data-value="larger">larger</a>
+  &nbsp;&nbsp; Width:
+  <a href="#" data-key="width" data-value="narrow">narrow</a> |
+  <a href="#" data-key="width" data-value="normal">normal</a> |
+  <a href="#" data-key="width" data-value="wide">wide</a>
+  &nbsp;&nbsp; Scroll animation:
+  <a href="#" data-key="motion" data-value="system">system</a> |
+  <a href="#" data-key="motion" data-value="on">on</a> |
+  <a href="#" data-key="motion" data-value="off">off</a>
+</p>
+
+<h1>actual-fingerprints</h1>
+<p class="authors">ege türker</p>
+<p class="affil">September 2026</p>
+<p class="links">[ <a href="https://github.com/1etu/actual-fingerprints">Code</a> ] [ <a href="https://github.com/1etu/actual-fingerprints#readme">README</a> ] [ <a href="population.json">Data</a> ] [ <a href="#demo">Demo</a> ]</p>
+
+<p class="teaser"><img src="icon.png" width="160" height="160" alt="The fingerprint generated from the seed actual-fingerprints, a left loop with 44 minutiae."></p>
+<p class="caption" style="text-align:center">The fingerprint for the seed <code>actual-fingerprints</code>.</p>
+
+<hr>
+
+<h2>Abstract</h2>
+<p>This library synthesises fingerprint images procedurally. A seed string is hashed into a pseudorandom stream, which selects a pattern class, places the singular points, and derives a ridge orientation field. Ridges are then grown by repeatedly filtering a sparse set of nucleation points with oriented Gabor kernels until the field is filled. Nothing is drawn by hand and no reference images are used. Ridge endings and bifurcations are not placed; they emerge where growth fronts meet out of phase. The same seed produces byte-identical output on any machine and any JavaScript engine, a property that required replacing the standard library's transcendental functions. It was written for a game server that needed one believable print per character without storing images: the seed is the record and the print is regenerated on demand in about a tenth of a second.</p>
+
+<h2 id="contents">Contents</h2>
+<div class="contents">
+<ol>
+  <li><a href="#produces">What it produces</a></li>
+  <li><a href="#demo">Try it</a></li>
+  <li><a href="#classes">Pattern classes</a></li>
+  <li><a href="#field">Orientation field</a></li>
+  <li><a href="#growth">Ridge growth</a></li>
+  <li><a href="#minutiae">Minutiae</a></li>
+  <li><a href="#render">Rendering</a></li>
+  <li><a href="#matching">Matching</a></li>
+  <li><a href="#determinism">Determinism</a></li>
+  <li><a href="#performance">Performance</a></li>
+  <li><a href="#statistics">Population statistics</a></li>
+  <li><a href="#limits">Limitations</a></li>
+  <li><a href="#api">Interface</a></li>
+  <li><a href="#refs">References</a></li>
+</ol>
+</div>
+
+<hr>
+
+<section id="produces">
+<h2>1. What it produces</h2>
+<p>Each call returns a grayscale image at 320 by 400 pixels, roughly a fingertip at 500 dots per inch, together with the silhouette mask, the pattern class, the mean ridge period, and the full list of minutiae with positions, angles and types.</p>
+
+<div class="figure">
+  <div class="scroll"><img src="gallery.png" alt="Forty synthetic fingerprints in a grid, each with a different ridge flow." loading="lazy"></div>
+  <p class="caption"><b>Figure 1:</b> Forty prints from consecutive seeds <code>citizen-2001</code> to <code>citizen-2040</code>, rendered through the impression pass. Loops, whorls and arches appear roughly in the proportions found in the general population because the class is drawn from those frequencies.</p>
+</div>
+
+<p>The raw output is a clean ridge map. A second pass, described in section 7, adds what an actual impression leaves behind: uneven pressure, pores, dry patches, flexion creases and paper texture.</p>
+
+<div class="figure">
+  <img src="detail.png" alt="A clean ridge map beside the same region rendered as a pressed print." loading="lazy">
+  <p class="caption"><b>Figure 2:</b> The same 150 by 150 pixel region at three times magnification. Left, the raw generator output. Right, after the impression pass. The ridges are identical; only the rendering differs.</p>
+</div>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="demo">
+<h2>2. Try it</h2>
+<p>The generator is arithmetic over typed arrays and runs unmodified in a browser. Below is the actual library, bundled to 17 kilobytes, generating in your own browser rather than serving a stored image. Type any seed.</p>
+
+<div class="demo">
+  <form id="demo-form">
+    <label for="seed">Seed</label>
+    <input type="text" id="seed" value="actual-fingerprints" spellcheck="false" autocomplete="off">
+    <button type="submit">Generate</button>
+    <button type="button" id="demo-random">Random</button>
+    <br>
+    <label><input type="checkbox" id="opt-ink" checked> impression pass</label>
+    <label><input type="checkbox" id="opt-minutiae"> mark minutiae</label>
+  </form>
+  <div class="stage">
+    <canvas id="stage" width="320" height="400" aria-label="The generated fingerprint for the current seed."></canvas>
+    <div class="readout" id="readout" role="status" aria-live="polite"></div>
+  </div>
+</div>
+
+<p>Enter the same seed twice and the image is identical to the last bit, here and on the machine that produced every figure on this page. Enter two different seeds and nothing is shared between them.</p>
+
+<h3>Matching two seeds</h3>
+<p>The matcher compares minutiae sets rather than pixels. It searches alignments and counts how many features land on top of each other within tolerance.</p>
+
+<div class="demo">
+  <form id="match-form">
+    <label for="match-a">A</label>
+    <input type="text" id="match-a" value="citizen-2001" spellcheck="false" autocomplete="off">
+    <label for="match-b">B</label>
+    <input type="text" id="match-b" value="citizen-2001" spellcheck="false" autocomplete="off">
+    <button type="submit">Compare</button>
+  </form>
+  <div class="readout" id="match-out" role="status" aria-live="polite"></div>
+</div>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="classes">
+<h2>3. Pattern classes</h2>
+<p>The first draw from the seeded stream picks a class. The weights approximate the distribution reported for the general population, with whorls split into their Henry subtypes.</p>
+
+<div class="tablewrap">
+<table>
+  <caption>Table 1: Class weights, per thousand prints.</caption>
+  <tr><th>Class</th><th class="n">Weight</th><th>Singular points</th></tr>
+  <tr><td>left loop</td><td class="n">315</td><td>one core, one delta to the right</td></tr>
+  <tr><td>right loop</td><td class="n">315</td><td>one core, one delta to the left</td></tr>
+  <tr><td>plain whorl</td><td class="n">240</td><td>two cores, two deltas</td></tr>
+  <tr><td>double loop</td><td class="n">40</td><td>two cores on a tilted axis, two deltas</td></tr>
+  <tr><td>central pocket</td><td class="n">30</td><td>two close cores, one outer and one inner delta</td></tr>
+  <tr><td>accidental</td><td class="n">10</td><td>as double loop, heavily jittered</td></tr>
+  <tr><td>plain arch</td><td class="n">40</td><td>none, analytic field</td></tr>
+  <tr><td>tented arch</td><td class="n">10</td><td>one core with a delta directly beneath</td></tr>
+</table>
+</div>
+
+<p>Passing a hand shifts the loop mass so that 94 percent of loops open toward the ulnar side, matching the asymmetry of real hands. Each singular point also receives eight sector offsets, small random angles that bend the field locally. Those offsets are what separate a narrow loop from a fat one within the same class.</p>
+
+<div class="figure">
+  <div class="scroll"><img src="classes.png" alt="Eight fingerprints, one per pattern class." loading="lazy"></div>
+  <p class="caption"><b>Figure 3:</b> One print per class, forced rather than drawn. Top row: plain arch, tented arch, left loop, right loop. Bottom row: plain whorl, central pocket, double loop, accidental.</p>
+</div>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="field">
+<h2>4. Orientation field</h2>
+<p>Ridge direction at every pixel comes from the zero-pole model of Sherlock and Monro. Cores act as zeros and deltas as poles of a complex function whose argument, halved, gives the ridge angle.</p>
+
+<p class="eq">theta(p) = tilt + 1/2 &middot; ( &Sigma;<sub>cores</sub> g(arg(p &minus; c)) &minus; &Sigma;<sub>deltas</sub> g(arg(p &minus; d)) )</p>
+
+<p>The function <i>g</i> is the piecewise linear sector correction of Vizcaya and Gerhardt, interpolating between eight per-point offsets. Far from any singular point the sums cancel and the field settles to horizontal plus a small global tilt. A plain arch has no singular points at all and instead uses a smooth rational field with a single apex.</p>
+
+<p>The result is quantised into 32 orientation bins of 5.6 degrees. That is coarse enough to index a kernel bank cheaply and fine enough that no banding is visible in the finished ridges.</p>
+
+<div class="figure">
+  <div class="scroll"><img src="fields.png" alt="Orientation fields for the eight classes drawn as short strokes with cores and deltas marked." loading="lazy"></div>
+  <p class="caption"><b>Figure 4:</b> The fields behind Figure 3, sampled every nine pixels. Red squares are cores, blue squares are deltas. Stroke colour encodes the local ridge period, blue for tight and red for wide.</p>
+</div>
+
+<h3>Ridge period</h3>
+<p>A base period is drawn once per print from a clamped normal distribution centred on 9.4 pixels. It is then modulated across the image: twelve percent tighter near deltas, plus a four percent lattice noise. The result is clamped between 7 and 12 pixels and quantised into 8 bins.</p>
+
+<p>An earlier version also widened the period above the core, which is what the literature describes. That turned out to force a phase dislocation on every whorl: a ring of ridges circling the core passed through a wider zone above and a normal zone below, so the phase could not close, and the growth absorbed the mismatch as a straight vertical seam. Removing the term eliminated the seams entirely.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="growth">
+<h2>5. Ridge growth</h2>
+<p>This is where the print actually appears. The state is a ternary image: one for ridge, minus one for valley, zero for untouched. It begins empty apart from about 45 nucleation points, three by three blocks placed by Poisson disk sampling with a minimum spacing of two ridge periods, plus one on each core and delta. Every pass replaces each pixel inside the silhouette with the sign of its Gabor response, where the kernel is selected by that pixel's own orientation and period bins.</p>
+
+<div class="figure">
+  <img src="gabor.png" alt="A grid of Gabor kernels, rows by period and columns by orientation." loading="lazy" style="max-width:480px">
+  <p class="caption"><b>Figure 5:</b> The kernel bank. Rows are ridge period from 7 to 12 pixels, columns are orientation from 0 to 157.5 degrees; every fourth of the 32 stored orientations is shown. All 256 kernels are built once when the module loads.</p>
+</div>
+
+<p>Each kernel has a circular support of radius 0.9 periods, a Gaussian envelope with standard deviation 0.38 periods across the ridge and 0.48 along it, and a cosine of one period across. The mean is subtracted so an empty neighbourhood produces exactly zero. Values are quantised to sixteen-bit integers normalised so the absolute sum is 32768, which keeps the accumulator inside a thirty-two bit integer for ternary input.</p>
+
+<div class="figure">
+  <div class="scroll"><img src="growth.png" alt="Six stages of ridge growth from scattered nuclei to a filled print." loading="lazy"></div>
+  <p class="caption"><b>Figure 6:</b> Passes 1, 2, 3, 4, 6 and 8 for one seed. Grey is untouched, black is ridge, white is valley. Fronts expand from each nucleus at roughly the kernel radius per pass, meet, and negotiate their phase difference into ridge endings and bifurcations.</p>
+</div>
+
+<h3>Convergence</h3>
+<p>Three decisions determine whether this settles at all.</p>
+<ul>
+  <li>Passes run in place, sweeping sixteen by sixteen blocks forward on even passes and backward on odd ones. A double buffered update fell into two-cycles and never converged.</li>
+  <li>A pixel that already carries a sign only flips when the response exceeds 4096, an eighth of full scale. Untouched pixels adopt any nonzero sign. Without this hysteresis roughly a thousand boundary pixels oscillated forever.</li>
+  <li>Blocks are marked dirty when any pixel in them changes. The next pass visits only dirty blocks and their neighbours, so once coverage is complete most of the image is idle.</li>
+</ul>
+
+<div class="figure">
+  <img src="chart-convergence.svg" alt="Pixels changed per pass on a logarithmic scale, falling from about fifty thousand to under a hundred within eight passes." loading="lazy">
+  <p class="caption"><b>Figure 7:</b> Pixels changed per pass for three seeds, logarithmic scale. Coverage completes in three or four passes; the remainder settles collisions. Growth stops below a threshold of one pixel in a thousand, typically after 5 to 13 passes.</p>
+</div>
+
+<p>One repair round follows. Any interior pixel whose final response is very weak sits at the centre of a ridge or valley too wide for the kernel to resolve, and a small block of the opposite sign is planted there before settling again. That inserts a ridge ending where two fronts met out of phase, which is what skin does as well.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="minutiae">
+<h2>6. Minutiae</h2>
+<p>The grey image is thresholded, thinned with the Zhang and Suen algorithm, and cleared of staircase corners. Spurs shorter than ten pixels are pruned from every free end first. Without that step, thinning leaves two-pixel forks on ridge tips that read as bifurcations and the type ratio inverts.</p>
+
+<div class="figure">
+  <img src="minutiae.png" alt="A magnified region overlaid with its green skeleton and marked minutiae." loading="lazy" style="max-width:540px">
+  <p class="caption"><b>Figure 8:</b> Three times magnification around a core. Green is the thinned skeleton. Red squares mark ridge endings, blue squares mark bifurcations, and the tick shows the assigned direction.</p>
+</div>
+
+<p>Crossing number on the pruned skeleton gives the type: one for an ending, three for a bifurcation. An ending's direction is the vector to the point reached by walking eight pixels along the ridge. For a bifurcation all three branches are walked, the two with the smallest mutual angle are taken as the fork, and the direction is their bisector, following the convention of ISO 19794-2.</p>
+
+<p>Several filters then run in order, all on integer squared distances. Anything within ten pixels of the silhouette edge is discarded, since those are cuts rather than features. Two endings within six pixels facing each other are a broken ridge and both are removed. Two bifurcations within six pixels are a hole and both are removed. Any surviving pair closer than four pixels keeps only one.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="render">
+<h2>7. Rendering</h2>
+
+<h3>Vector output</h3>
+<p>The tracer runs marching squares over the binary ridge map with a fixed saddle rule, links segments through integer edge identifiers rather than a hash map, and simplifies each closed contour with the Douglas-Peucker algorithm. Output is a single path with the even-odd fill rule, which is exactly correct here because contours from a binary image never cross and nesting strictly alternates ridge and valley.</p>
+
+<div class="tablewrap">
+<table>
+  <caption>Table 2: Simplification tolerance against output size, one representative print.</caption>
+  <tr><th class="n">Tolerance</th><th class="n">Vertices</th><th class="n">Bytes</th><th>Fidelity</th></tr>
+  <tr><td class="n">0.2 px</td><td class="n">7053</td><td class="n">35526</td><td>indistinguishable from the raster</td></tr>
+  <tr><td class="n">0.75 px</td><td class="n">1303</td><td class="n">8576</td><td>98.3 percent of pixels agree; the default</td></tr>
+  <tr><td class="n">1.5 px</td><td class="n">640</td><td class="n">5092</td><td>visible flattening under magnification</td></tr>
+  <tr><td class="n">3 px</td><td class="n">406</td><td class="n">3666</td><td>ridge shape degraded</td></tr>
+</table>
+</div>
+
+<div class="figure">
+  <img src="print.svg" alt="A fingerprint rendered as vector paths." loading="lazy" style="max-width:320px">
+  <p class="caption"><b>Figure 9:</b> A traced print at the default tolerance, 9.4 kilobytes of path data, shown here as vector rather than raster.</p>
+</div>
+
+<h3>Raster output</h3>
+<p>The encoder writes eight-bit grayscale PNG directly, including its own cyclic redundancy check table, and defers only the deflate step to the platform. It sets the physical dimension chunk so that viewers report 500 dots per inch.</p>
+
+<h3>The impression pass</h3>
+<p>A clean ridge map does not look like a fingerprint; it looks like a diagram. The impression pass supplies what a real contact leaves behind, all of it derived from a forked stream of the same seed:</p>
+<ul>
+  <li>the threshold shifts under a slow lattice noise, so ridges thicken and thin across the print;</li>
+  <li>darkness scales by a pressure field and by distance from the silhouette edge, so the border fades rather than stopping abruptly;</li>
+  <li>faint pores are punched along roughly one skeleton pixel in twenty;</li>
+  <li>ridges lighten inside dry patches;</li>
+  <li>zero to two flexion creases cut across the pattern;</li>
+  <li>a textured paper tone fills the background, followed by sensor noise and a final blur.</li>
+</ul>
+
+<div class="figure">
+  <div class="scroll"><img src="pipeline.png" alt="Six panels from orientation field through growth passes to the final pressed rendering." loading="lazy"></div>
+  <p class="caption"><b>Figure 10:</b> The whole sequence for one seed: orientation field, three growth passes, the converged ridge map, and the impression pass.</p>
+</div>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="matching">
+<h2>8. Matching</h2>
+<p>The matcher follows the alignment approach of Ratha and colleagues. For every pair of minutiae, one taken from each print, it hypothesises the rotation and translation mapping one onto the other, transforms the entire first set, and counts one-to-one matches within ten pixels and twenty-five degrees, scoring a type mismatch at half weight. The second set is bucketed into a sixteen pixel grid so each lookup touches at most four cells, and a hypothesis is abandoned as soon as it cannot beat the best already found.</p>
+
+<p class="eq">score = matched<sup>2</sup> / ( |A| &middot; |B| )</p>
+
+<div class="figure">
+  <img src="chart-matrix.svg" alt="A ten by ten matrix of match scores, dark along the diagonal and pale elsewhere." loading="lazy">
+  <p class="caption"><b>Figure 11:</b> All pairwise scores among ten prints. The diagonal is one by construction. The largest off-diagonal score is 0.048 and the mean is 0.025, so the gap between the same finger and different fingers spans more than an order of magnitude.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <caption>Table 3: Matcher behaviour under transformation.</caption>
+  <tr><th>Comparison</th><th class="n">Score</th></tr>
+  <tr><td>a print against itself</td><td class="n">1.000</td></tr>
+  <tr><td>minutiae shifted 9 px right and 5 px up</td><td class="n">1.000</td></tr>
+  <tr><td>rotated 8 degrees about the centre</td><td class="n">1.000</td></tr>
+  <tr><td>only the top half retained, 30 of 44 minutiae</td><td class="n">0.682</td></tr>
+  <tr><td>three unrelated prints</td><td class="n">0.014 to 0.019</td></tr>
+</table>
+</div>
+
+<p>Anything above 0.3 is the same finger for practical purposes. This is not a forensic matcher. It has no model of elastic skin distortion and it has never been evaluated against anything but its own output.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="determinism">
+<h2>9. Determinism</h2>
+<p>The guarantee is that a seed yields identical bytes on every machine and every engine. Two things threaten that in JavaScript.</p>
+
+<p>The obvious one is the ambient random source, and nothing here touches it. All randomness comes from a hash of the seed string feeding an sfc32 generator, with independent sub-streams forked by label for the class, the silhouette, the period map, the nucleation points and the impression pass. Sub-streams are derived from the label rather than the parent's draw count, so adding a draw in one stage cannot shift another.</p>
+
+<p>The subtle one is that the standard library's transcendental functions are not required to be correctly rounded. Implementations of sine, exponential and arctangent differ in their final bits between engines, and have changed between versions of the same engine. A one-unit difference in a kernel value flips a pixel, and a flipped pixel changes every pass after it.</p>
+
+<p>So none of them are used. The library carries its own sine, cosine, exponential and arctangent, built from addition, multiplication and division only, which the floating point standard requires to be correctly rounded everywhere. Each performs range reduction followed by a Taylor series, accurate to better than one part in a billion against the platform implementation. Every value that reaches a pixel is then quantised, into an orientation bin, a period bin or a sixteen-bit kernel weight, so even that residual error has no path to the output. The growth loop itself is entirely integer arithmetic.</p>
+
+<p>The test suite pins hashes of the pixel buffer for six seeds and one rendered impression. A change to any of them is a breaking change, because somebody's stored seeds would then mean something different. The demo in section 2 is the practical check: it runs the same code in your browser and reproduces the figures generated on the author's machine.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="performance">
+<h2>10. Performance</h2>
+<p>Measured from the built package on a laptop, Node 22.23, single threaded, after warm-up.</p>
+
+<div class="figure">
+  <img src="chart-perf.svg" alt="Bar chart of operation timings, generate at 104 milliseconds and everything else under 7." loading="lazy">
+  <p class="caption"><b>Figure 12:</b> Cost per operation. Generation dominates; every other entry is small enough to ignore.</p>
+</div>
+
+<p>Growth accounts for nearly all of it: about 215 multiply-accumulate operations per pixel per pass, across roughly 83 thousand masked pixels, for 5 to 13 passes. Block skipping reduces the later passes to only the regions still moving. No memory is allocated inside any loop and the kernel bank is shared across every call in the process.</p>
+
+<p>Several things were tried and rejected. Fourier convolution gains nothing because the kernel varies per pixel. The rotated Gabor kernel is not separable off-axis. Skipping zero-valued taps costs more in branch misprediction than the multiply it saves. Growing at half resolution first fails because a period of three or four pixels is below what a discretised kernel represents cleanly.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="statistics">
+<h2>11. Population statistics</h2>
+<p>The figures below come from one thousand consecutive seeds. The same run is executed by the test suite as a distribution check. The raw data is in <a href="population.json">population.json</a>.</p>
+
+<div class="figure">
+  <img src="chart-classes.svg" alt="Bar chart comparing observed class counts against expected weights." loading="lazy">
+  <p class="caption"><b>Figure 13:</b> Observed class counts against the configured weights over 1000 seeds. Aggregating the subtypes gives 636 loops, 312 whorls and 52 arches against expectations of 630, 320 and 50.</p>
+</div>
+
+<div class="figure">
+  <img src="chart-minutiae.svg" alt="Histogram of minutiae counts per print, peaking near forty." loading="lazy">
+  <p class="caption"><b>Figure 14:</b> Minutiae per print. Median 40, fifth percentile 23, ninety-fifth percentile 58, with a thin tail in both directions.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+  <caption>Table 4: Summary over 1000 seeds.</caption>
+  <tr><th>Quantity</th><th class="n">Value</th></tr>
+  <tr><td>mean ridge period</td><td class="n">9.39 px</td></tr>
+  <tr><td>median minutiae per print</td><td class="n">40</td></tr>
+  <tr><td>minutiae range observed</td><td class="n">3 to 87</td></tr>
+  <tr><td>mean ratio of endings to bifurcations</td><td class="n">1.12</td></tr>
+  <tr><td>silhouette coverage</td><td class="n">60 to 70 percent</td></tr>
+</table>
+</div>
+
+<p>Real rolled prints carry roughly two endings for every bifurcation. This generator produces close to parity, a discrepancy discussed below.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="limits">
+<h2>12. Limitations</h2>
+<ul>
+  <li><b>One impression per finger.</b> There is no model of a partial, rotated or smudged lift of the same print. The impression pass always renders the whole fingertip with identical geometry.</li>
+  <li><b>Minutiae count is emergent, not controllable.</b> The obvious lever, the number of nucleation points, does not work: raising it from 5 to 200 moves the mean count from 47.8 down to 40.7, a change smaller than the variation between seeds and in the wrong direction. The field, not the seeding, determines where fronts collide. A parameter that claimed to control this was removed rather than left in place doing nothing.</li>
+  <li><b>The type ratio is wrong.</b> Endings and bifurcations come out near parity where skin gives about two to one.</li>
+  <li><b>The silhouette is a symmetric capsule.</b> Rolled prints, with their wider and more irregular outline, are not represented.</li>
+  <li><b>Whorls with nearly coincident cores</b> can produce a small dot or ring at the exact centre.</li>
+  <li><b>No validation against real biometrics.</b> Nothing here has been tested against a real fingerprint database or a commercial matcher. The goal was believable, deterministic and fast, not a benchmark corpus.</li>
+</ul>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="api">
+<h2>13. Interface</h2>
+
+<pre>import { generate, ink, toPNG, toSVG, compare } from 'actual-fingerprints'
+
+const print = generate('citizen-4821')
+
+print.pattern      // 'right-loop'
+print.period       // 9.46
+print.minutiae[0]  // { x: 131, y: 88, angle: 2.36, type: 'ending' }
+print.pixels       // Uint8Array, 0 is ridge, 255 is paper
+
+writeFileSync('print.png', toPNG(ink(print)))
+compare(print, generate('citizen-4821')).score   // 1</pre>
+
+<div class="tablewrap">
+<table>
+  <caption>Table 5: Exported functions.</caption>
+  <tr><th>Signature</th><th>Returns</th></tr>
+  <tr><td><code>generate(seed, options?)</code></td><td>A print. Options are <code>width</code>, <code>height</code>, <code>pattern</code> to force a class, and <code>hand</code> to bias loop direction.</td></tr>
+  <tr><td><code>ink(print)</code></td><td>A new print with the same minutiae and pressed-impression pixels.</td></tr>
+  <tr><td><code>toSVG(print, options?)</code></td><td>A string. Options are <code>tolerance</code>, <code>fill</code> and <code>background</code>.</td></tr>
+  <tr><td><code>toPNG(print)</code></td><td>A <code>Uint8Array</code> holding grayscale PNG.</td></tr>
+  <tr><td><code>toDataURL(print)</code></td><td>The same image as a data URL.</td></tr>
+  <tr><td><code>compare(a, b)</code></td><td><code>{ score, matched, rotation, dx, dy }</code>.</td></tr>
+</table>
+</div>
+
+<p>A print carries <code>seed</code>, <code>width</code>, <code>height</code>, <code>pattern</code>, <code>period</code>, <code>pixels</code>, <code>mask</code> and <code>minutiae</code>. The package ships both module formats with type declarations and has no runtime dependencies. Only the PNG encoder touches the platform; everything else runs in a browser unmodified, as this page demonstrates.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<section id="refs">
+<h2>14. References</h2>
+<ol class="refs">
+  <li>R. Cappelli, D. Maio, D. Maltoni. Synthetic fingerprint-database generation. <i>International Conference on Pattern Recognition</i>, 2002. Also the synthetic generation chapter of the <i>Handbook of Fingerprint Recognition</i>.</li>
+  <li>B. G. Sherlock, D. M. Monro. A model for interpreting fingerprint topology. <i>Pattern Recognition</i> 26(7), 1993.</li>
+  <li>P. R. Vizcaya, L. A. Gerhardt. A nonlinear orientation model for global description of fingerprints. <i>Pattern Recognition</i> 29(7), 1996.</li>
+  <li>T. Y. Zhang, C. Y. Suen. A fast parallel algorithm for thinning digital patterns. <i>Communications of the ACM</i> 27(3), 1984.</li>
+  <li>N. K. Ratha, K. Karu, S. Chen, A. K. Jain. A real-time matching system for large fingerprint databases. <i>IEEE Transactions on Pattern Analysis and Machine Intelligence</i> 18(8), 1996.</li>
+  <li>A. H. Ansari. Generation and storage of large synthetic fingerprint database. Master's thesis, Indian Institute of Science, 2011.</li>
+</ol>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
+<p class="foot">Every figure on this page was rendered by the library itself. No fingerprint shown here belongs to anyone. Source and issues at <a href="https://github.com/1etu/actual-fingerprints">github.com/1etu/actual-fingerprints</a>. MIT licence.</p>
+
+</div>
+
+<a id="jump" href="#contents" data-show="0">contents</a>
+
+<script src="demo.js"></script>
+<script src="site.js"></script>
+</body>
+</html>

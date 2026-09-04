@@ -5,6 +5,8 @@ Synthetic human fingerprints from a seed. Same seed, same print, byte for byte, 
 
 The icon above is `generate('actual-fingerprints')`. It is a left loop with 44 minutiae and a ridge period of 8.1 px.
 
+There is a longer write-up with figures and a live in-browser demo at **[1etu.github.io/actual-fingerprints](https://1etu.github.io/actual-fingerprints/)**.
+
 The generator follows the SFinGe recipe from the University of Bologna: pick a pattern class, place the singular points, derive a ridge orientation field from them, then grow ridges by repeatedly filtering a few random seeds with oriented Gabor kernels. Ridge endings and bifurcations are not placed; they appear where growth fronts collide, which is also why they look right. On top of that there is a minutiae extractor, a marching-squares SVG tracer, a PNG encoder, a pass that makes the result look like a pressed ink print, and a small minutiae matcher.
 
 I wrote it for a game server that needed one believable print per character without storing images. Store the seed, regenerate on demand.
@@ -41,7 +43,7 @@ CommonJS works the same way with `require('actual-fingerprints')`.
 
 | | |
 |---|---|
-| `generate(seed, options?)` | `seed` is a string or number. Options: `width` and `height` in px (320 by 400), `pattern` to force a class, `hand` (`'left'` or `'right'`) to bias loops toward the ulnar side, `density` from 0 to 1 for minutiae count (0.5). Returns a `Fingerprint`. |
+| `generate(seed, options?)` | `seed` is a string or number. Options: `width` and `height` in px (320 by 400), `pattern` to force a class, `hand` (`'left'` or `'right'`) to bias loops toward the ulnar side. Returns a `Fingerprint`. |
 | `ink(print)` | A new `Fingerprint` with the same minutiae and pixels that look like a pressed print: pressure variation, faded edges, pores, dry patches, creases, paper. Deterministic from the seed. |
 | `toSVG(print, options?)` | Ridges traced as one even-odd `<path>`. `tolerance` in px (0.75), `fill`, `background`. |
 | `toPNG(print)` | 8-bit grayscale PNG tagged as 500 dpi. |
@@ -93,7 +95,7 @@ The silhouette is the SFinGe shape, a rectangle capped by two half-ellipses with
 
 ### Ridge growth
 
-This is where the print actually comes from. The state is a ternary image: +1 ridge, -1 valley, 0 blank. It starts empty except for about 45 seeds at the default density, 3 by 3 blocks placed by Poisson-disk sampling with a spacing of two ridge periods, plus one seed on each core and delta. Every pass replaces each pixel inside the silhouette with the sign of its Gabor response, where the kernel is chosen by that pixel's orientation and period bins.
+This is where the print actually comes from. The state is a ternary image: +1 ridge, -1 valley, 0 blank. It starts empty except for about 45 seeds, 3 by 3 blocks placed by Poisson-disk sampling with a spacing of two ridge periods, plus one seed on each core and delta. Every pass replaces each pixel inside the silhouette with the sign of its Gabor response, where the kernel is chosen by that pixel's orientation and period bins.
 
 <p align="center"><img src="docs/gabor.png" width="560" alt="the Gabor kernel bank"></p>
 <p align="center"><sub>The kernel bank. Rows are period 7 to 12 px, columns are orientation 0 to 157.5 degrees in 22.5 degree steps; every fourth of the 32 orientations is shown.</sub></p>
@@ -119,7 +121,7 @@ The grey image is thresholded, thinned with Zhang and Suen's algorithm, and clea
 
 Crossing number on the pruned skeleton gives the type: 1 for an ending, 3 for a bifurcation. Direction for an ending is the vector to the point reached by walking eight pixels along the skeleton. For a bifurcation, all three branches are walked, the two with the smallest mutual angle form the fork, and the direction is their bisector, the same convention as ISO 19794-2.
 
-Anything within 10 px of the silhouette edge is dropped, since those are cuts, not features. Two endings within 6 px facing each other are a broken ridge and both go; two bifurcations within 6 px are a hole and both go; any pair closer than 4 px keeps only one. What remains is sorted by row and column. Default density gives a median of about 40 minutiae per print with roughly equal numbers of endings and bifurcations. Real rolled prints run closer to two endings per bifurcation, which I have not tried to correct.
+Anything within 10 px of the silhouette edge is dropped, since those are cuts, not features. Two endings within 6 px facing each other are a broken ridge and both go; two bifurcations within 6 px are a hole and both go; any pair closer than 4 px keeps only one. What remains is sorted by row and column. Over 1000 seeds the median is 40 minutiae per print, with the fifth and ninety-fifth percentiles at 23 and 58, and roughly equal numbers of endings and bifurcations. Real rolled prints run closer to two endings per bifurcation, which I have not tried to correct.
 
 ### Rendering
 
@@ -172,7 +174,11 @@ Growth is nearly all of it: about 215 multiply-adds per pixel per pass over 83 t
 
 ## Limitations
 
-Only one impression per finger. There is no notion of a partial, rotated or smudged lift of the same print yet; `ink` always renders the whole fingertip with the same geometry. The minutiae mix is about one to one where real skin gives two endings per bifurcation. The silhouette is a symmetric capsule, so rolled prints with their wider, irregular outline are not represented. Whorls with two cores less than a period apart can produce a small dot or ring at the very centre. None of this has been validated against real biometric data or a commercial matcher; the aim was believable prints, deterministic and fast, not a benchmark dataset.
+Only one impression per finger. There is no notion of a partial, rotated or smudged lift of the same print yet; `ink` always renders the whole fingertip with the same geometry.
+
+Minutiae count is emergent and cannot be dialled. The obvious lever is the number of nucleation seeds, and it does not work: raising it from 5 to 200 moves the mean count from 47.8 down to 40.7, a smaller swing than the variation between seeds, and in the wrong direction. The orientation field decides where fronts collide, not the seeding. An option that claimed to control this was removed rather than left in place doing nothing.
+
+The minutiae mix is about one to one where real skin gives two endings per bifurcation. The silhouette is a symmetric capsule, so rolled prints with their wider, irregular outline are not represented. Whorls with two cores less than a period apart can produce a small dot or ring at the very centre. None of this has been validated against real biometric data or a commercial matcher; the aim was believable prints, deterministic and fast, not a benchmark dataset.
 
 ## Layout
 
@@ -193,7 +199,7 @@ Only one impression per finger. There is no notion of a partial, rotated or smud
       index.ts      exports
     test/           vitest, golden hashes, a 1000-seed population check under SLOW=1
     bench/          one script over dist
-    docs/           the figures in this file, all rendered by the library
+    docs/           the project page, plus every figure, all rendered by the library
 
 `pnpm test` typechecks and runs the suite, `pnpm build` produces `dist/`, `pnpm bench` builds and prints timings.
 

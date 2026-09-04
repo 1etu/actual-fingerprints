@@ -28,3 +28,12 @@ export function generate(seed: string | number, { width = 320, height = 400, pat
   const minutiae = extract(ridges, mask, width, height)
   return { seed: s, width, height, pattern: spec.pattern, period: spec.period, pixels: gray, mask, minutiae }
 }
+
+export function toRGBA(p: Fingerprint) {
+  const out = new Uint8ClampedArray(p.pixels.length * 4)
+  for (let i = 0, j = 0; i < p.pixels.length; i++, j += 4) {
+    out[j] = out[j + 1] = out[j + 2] = p.pixels[i]
+    out[j + 3] = 255
+  }
+  return out
+}

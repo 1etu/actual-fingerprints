@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest'
-import { generate } from '../src/index'
+import { generate, toRGBA } from '../src/index'
 
 function fnv(a: Uint8Array) {
   let h = 0x811c9dc5
@@ -54,6 +54,16 @@ test('minutiae sit inside the finger', () => {
     expect(m.angle).toBeGreaterThanOrEqual(0)
     expect(m.angle).toBeLessThan(2 * Math.PI)
   }
+})
+
+test('rgba is four bytes a pixel', () => {
+  const p = generate('rgba')
+  const rgba = toRGBA(p)
+  expect(rgba).toBeInstanceOf(Uint8ClampedArray)
+  expect(rgba.length).toBe(p.width * p.height * 4)
+  expect(rgba[3]).toBe(255)
+  expect(rgba[0]).toBe(p.pixels[0])
+  expect(rgba[rgba.length - 4]).toBe(p.pixels[p.pixels.length - 1])
 })
 
 test('period stays in a human range', () => {

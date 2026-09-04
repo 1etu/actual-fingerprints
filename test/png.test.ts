@@ -1,6 +1,7 @@
 import { test, expect } from 'vitest'
 import { inflateSync } from 'node:zlib'
-import { generate, toPNG, toDataURL } from '../src/index'
+import { generate } from '../src/index'
+import { toPNG, toDataURL } from '../src/node'
 
 function crc(buf: Uint8Array, from: number, to: number) {
   let c = 0xffffffff

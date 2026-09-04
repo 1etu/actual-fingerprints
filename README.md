@@ -22,7 +22,8 @@ I wrote it for a game server that needed one believable print per character with
 
 ```js
 import { writeFileSync } from 'node:fs'
-import { generate, ink, toPNG, toSVG, compare } from 'actual-fingerprints'
+import { generate, ink, toSVG, compare } from 'actual-fingerprints'
+import { toPNG } from 'actual-fingerprints/node'
 
 const print = generate('citizen-4821')
 
@@ -39,18 +40,47 @@ compare(print, generate('citizen-4821')).score   // 1
 compare(print, generate('citizen-4822')).score   // 0.02
 ```
 
-CommonJS works the same way with `require('actual-fingerprints')`.
+CommonJS works the same way with `require`. The root entry has no platform imports and bundles for a browser as it is; `actual-fingerprints/node` is the only place `node:zlib` and `node:crypto` appear.
 
 | | |
 |---|---|
 | `generate(seed, options?)` | `seed` is a string or number. Options: `width` and `height` in px (320 by 400), `pattern` to force a class, `hand` (`'left'` or `'right'`) to bias loops toward the ulnar side. Returns a `Fingerprint`. |
 | `ink(print)` | A new `Fingerprint` with the same minutiae and pixels that look like a pressed print: pressure variation, faded edges, pores, dry patches, creases, paper. Deterministic from the seed. |
 | `toSVG(print, options?)` | Ridges traced as one even-odd `<path>`. `tolerance` in px (0.75), `fill`, `background`. |
-| `toPNG(print)` | 8-bit grayscale PNG tagged as 500 dpi. |
-| `toDataURL(print)` | The PNG as a `data:` URL. |
-| `compare(a, b)` | `{ score, matched, rotation, dx, dy }`. Score is 0 to 1. |
+| `toRGBA(print)` | `Uint8ClampedArray` for `new ImageData(...)`, so a canvas can show it in one line. |
+| `compare(a, b)` | `{ score, matched, rotation, dx, dy }`. Score is 0 to 1. Either side may be a plain `{ minutiae, width, height }`. |
+| `toPNG(print)` | 8-bit grayscale PNG tagged as 500 dpi. From `actual-fingerprints/node`. |
+| `toDataURL(print)` | The PNG as a `data:` URL. From `actual-fingerprints/node`. |
+| `seedFor(secret, ...parts)` | HMAC-SHA256 hex of the parts under a server secret, for seeds nobody can guess. From `actual-fingerprints/node`. |
 
 `Fingerprint` has `seed`, `width`, `height`, `pattern`, `period`, `pixels`, `mask` (the fingertip silhouette, 0 or 1) and `minutiae`. `Pattern` is one of `arch`, `tented-arch`, `left-loop`, `right-loop`, `whorl`, `central-pocket`, `double-loop`, `accidental`. Minutia angles are radians in image coordinates, pointing into the ridge for an ending and along the fork for a bifurcation.
+
+## In FiveM
+
+The same package serves all three runtimes. Install it in your resource project and bundle it like any other dependency; FiveM's script runtimes have no module loader of their own.
+
+| Runtime | Entry | Use it for |
+|---|---|---|
+| server script | root and `actual-fingerprints/node` | seeds, minutiae, matching, PNG for exports |
+| NUI page | root | drawing prints to a canvas with `toRGBA` |
+| client script | root | reading minutiae and comparing, not generating |
+
+Generation takes about 100 ms and both the server and the client runtime run scripts on one thread, so generate in NUI where it costs nothing, cache by seed on the server, and store each character's minutiae at creation so matching never regenerates anything.
+
+Seeds should not be identifiers. Derive them on the server and hand one to a client only when the game says a print was found. The NUI can then render it, and nobody can enumerate other people's prints.
+
+```ts
+import { generate, compare } from 'actual-fingerprints'
+import { seedFor } from 'actual-fingerprints/node'
+
+const seed = seedFor(GetConvar('fp_secret', ''), citizenId, 'R1')
+const print = generate(seed, { hand: 'right' })
+db.save(citizenId, 'R1', { seed, pattern: print.pattern, minutiae: print.minutiae })
+
+compare(evidence, { minutiae: row.minutiae, width: 320, height: 400 }).score
+```
+
+The build targets Node 16 syntax, which is still FiveM's default server runtime, and CI installs the packed tarball on 16, 18 and 20.
 
 ## How it works
 
@@ -191,12 +221,14 @@ The minutiae mix is about one to one where real skin gives two endings per bifur
       grow.ts       seeds, in-place Gabor passes, repair round, grey render
       skeleton.ts   Zhang-Suen thinning
       minutiae.ts   pruning, crossing number, directions, filters
-      generate.ts   the pipeline and the Fingerprint type
+      generate.ts   the pipeline, the Fingerprint type, toRGBA
       ink.ts        pressed-print rendering
       svg.ts        marching squares and simplification
       png.ts        encoder
+      seed.ts       seedFor
       compare.ts    alignment matcher
-      index.ts      exports
+      index.ts      the root entry
+      node.ts       the node entry
     test/           vitest, golden hashes, a 1000-seed population check under SLOW=1
     bench/          one script over dist
     docs/           the project page, plus every figure, all rendered by the library

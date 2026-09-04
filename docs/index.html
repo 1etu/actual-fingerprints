@@ -395,7 +395,8 @@
 <section id="api">
 <h2>13. Interface</h2>
 
-<pre>import { generate, ink, toPNG, toSVG, compare } from 'actual-fingerprints'
+<pre>import { generate, ink, toSVG, compare } from 'actual-fingerprints'
+import { toPNG } from 'actual-fingerprints/node'
 
 const print = generate('citizen-4821')
 
@@ -414,13 +415,32 @@ compare(print, generate('citizen-4821')).score   // 1</pre>
   <tr><td><code>generate(seed, options?)</code></td><td>A print. Options are <code>width</code>, <code>height</code>, <code>pattern</code> to force a class, and <code>hand</code> to bias loop direction.</td></tr>
   <tr><td><code>ink(print)</code></td><td>A new print with the same minutiae and pressed-impression pixels.</td></tr>
   <tr><td><code>toSVG(print, options?)</code></td><td>A string. Options are <code>tolerance</code>, <code>fill</code> and <code>background</code>.</td></tr>
-  <tr><td><code>toPNG(print)</code></td><td>A <code>Uint8Array</code> holding grayscale PNG.</td></tr>
-  <tr><td><code>toDataURL(print)</code></td><td>The same image as a data URL.</td></tr>
-  <tr><td><code>compare(a, b)</code></td><td><code>{ score, matched, rotation, dx, dy }</code>.</td></tr>
+  <tr><td><code>toRGBA(print)</code></td><td>A <code>Uint8ClampedArray</code> for <code>new ImageData(...)</code>.</td></tr>
+  <tr><td><code>compare(a, b)</code></td><td><code>{ score, matched, rotation, dx, dy }</code>. Either side may be a plain <code>{ minutiae, width, height }</code>.</td></tr>
+  <tr><td><code>toPNG(print)</code></td><td>A <code>Uint8Array</code> holding grayscale PNG. From <code>actual-fingerprints/node</code>.</td></tr>
+  <tr><td><code>toDataURL(print)</code></td><td>The same image as a data URL. From <code>actual-fingerprints/node</code>.</td></tr>
+  <tr><td><code>seedFor(secret, ...parts)</code></td><td>HMAC-SHA256 hex of the parts under a server secret. From <code>actual-fingerprints/node</code>.</td></tr>
 </table>
 </div>
 
-<p>A print carries <code>seed</code>, <code>width</code>, <code>height</code>, <code>pattern</code>, <code>period</code>, <code>pixels</code>, <code>mask</code> and <code>minutiae</code>. The package ships both module formats with type declarations and has no runtime dependencies. Only the PNG encoder touches the platform; everything else runs in a browser unmodified, as this page demonstrates.</p>
+<p>A print carries <code>seed</code>, <code>width</code>, <code>height</code>, <code>pattern</code>, <code>period</code>, <code>pixels</code>, <code>mask</code> and <code>minutiae</code>. The package ships both module formats with type declarations and has no runtime dependencies. The root entry has no platform imports and bundles for a browser unmodified, as this page demonstrates; <code>actual-fingerprints/node</code> is the only place <code>node:zlib</code> and <code>node:crypto</code> appear.</p>
+
+<h3>Using it in FiveM</h3>
+<p>The same package serves all three runtimes. Install it in the resource project and bundle it like any other dependency, since FiveM's script runtimes have no module loader of their own.</p>
+
+<div class="tablewrap">
+<table>
+  <caption>Table 6: Which entry goes where.</caption>
+  <tr><th>Runtime</th><th>Entry</th><th>Use it for</th></tr>
+  <tr><td>server script</td><td>root and <code>actual-fingerprints/node</code></td><td>seeds, minutiae, matching, PNG for exports</td></tr>
+  <tr><td>NUI page</td><td>root</td><td>drawing prints to a canvas with <code>toRGBA</code></td></tr>
+  <tr><td>client script</td><td>root</td><td>reading minutiae and comparing, not generating</td></tr>
+</table>
+</div>
+
+<p>Generation takes about 100 milliseconds and both the server and the client runtime run scripts on a single thread, so generate in NUI where it costs nothing, cache by seed on the server, and store each character's minutiae at creation so that matching never regenerates anything. For a database search, index by pattern class first and chunk the comparisons across ticks.</p>
+
+<p>Seeds should not be identifiers. Derive them on the server with <code>seedFor</code> under a secret from a convar, and hand a seed to a client only when the game decides a print was found. The NUI can then render it, and nobody can enumerate other people's prints. The build targets Node 16 syntax, which is still FiveM's default server runtime, and the packed tarball is installed and exercised on Node 16, 18 and 20 in continuous integration.</p>
 <p class="top">[ <a href="#contents">contents</a> ]</p>
 </section>
 

@@ -18,6 +18,13 @@ test('different fingers score low', () => {
   }
 })
 
+test('plain minutiae objects match too', () => {
+  const p = generate('stored')
+  const row = { minutiae: JSON.parse(JSON.stringify(p.minutiae)), width: p.width, height: p.height }
+  expect(compare(p, row).score).toBe(1)
+  expect(compare(row, row).score).toBe(1)
+})
+
 test('shifted copy still matches', () => {
   const p = generate('shift')
   const q = { ...p, minutiae: p.minutiae.map(m => ({ ...m, x: m.x + 7, y: m.y - 4 })) }

@@ -1,17 +1,29 @@
 {
   "name": "actual-fingerprints",
   "version": "0.1.0",
-  "description": "Deterministic synthetic fingerprints from a seed. Pixels, minutiae, SVG, PNG.",
+  "description": "Deterministic synthetic fingerprints from a seed. Pixels, minutiae, SVG, PNG, matching.",
   "keywords": [
     "fingerprint",
     "synthetic",
     "procedural",
     "deterministic",
     "biometric",
+    "minutiae",
+    "gabor",
     "png",
-    "svg"
+    "svg",
+    "fivem"
   ],
   "license": "MIT",
+  "author": "ege türker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1etu/actual-fingerprints.git"
+  },
+  "homepage": "https://1etu.github.io/actual-fingerprints/",
+  "bugs": {
+    "url": "https://github.com/1etu/actual-fingerprints/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
@@ -34,7 +46,20 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./node": {
+      "import": {
+        "types": "./dist/node.d.ts",
+        "default": "./dist/node.js"
+      },
+      "require": {
+        "types": "./dist/node.d.cts",
+        "default": "./dist/node.cjs"
+      }
+    },
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsup",

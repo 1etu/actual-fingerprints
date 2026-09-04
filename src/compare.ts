@@ -1,9 +1,11 @@
 import { PI, sin, cos } from './fmath'
 import type { Fingerprint } from './generate'
 
+export type Matchable = Pick<Fingerprint, 'minutiae' | 'width' | 'height'>
+
 const cell = 16
 
-export function compare(a: Fingerprint, b: Fingerprint) {
+export function compare(a: Matchable, b: Matchable) {
   const na = a.minutiae.length, nb = b.minutiae.length
   const ax = new Float64Array(na), ay = new Float64Array(na), aa = new Float64Array(na), at = new Uint8Array(na)
   const bx = new Float64Array(nb), by = new Float64Array(nb), ba = new Float64Array(nb), bt = new Uint8Array(nb)

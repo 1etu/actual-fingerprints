@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+      - run: npm pack
+      - uses: actions/upload-artifact@v4
+        if: matrix.node == 22
+        with:
+          name: tarball
+          path: actual-fingerprints-*.tgz
+
+  tarball:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [16, 18, 20]
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: tarball
+      - run: |
+          mkdir smoke && cd smoke
+          npm init -y > /dev/null
+          npm install ../actual-fingerprints-*.tgz --no-audit --no-fund
+          node -e "
+            const { generate, ink, toSVG, toRGBA, compare } = require('actual-fingerprints')
+            const { toPNG, toDataURL, seedFor } = require('actual-fingerprints/node')
+            const fnv = a => { let h = 0x811c9dc5; for (let i = 0; i < a.length; i++) h = Math.imul(h ^ a[i], 0x01000193); return h >>> 0 }
+            const p = generate('alice')
+            if (fnv(p.pixels) !== 2075499559) throw new Error('golden mismatch on node ' + process.version + ': ' + fnv(p.pixels))
+            if (toPNG(ink(p)).length < 1000) throw new Error('png')
+            if (!toDataURL(p).startsWith('data:image/png;base64,')) throw new Error('dataurl')
+            if (toRGBA(p).length !== p.pixels.length * 4) throw new Error('rgba')
+            if (toSVG(p).length < 1000) throw new Error('svg')
+            if (seedFor('k', 'a', 1).length !== 64) throw new Error('seed')
+            if (compare(p, { minutiae: p.minutiae, width: 320, height: 400 }).score !== 1) throw new Error('compare')
+            console.log('tarball ok on', process.version)
+          "
+          node --input-type=module -e "
+            import { generate } from 'actual-fingerprints'
+            import { seedFor } from 'actual-fingerprints/node'
+            console.log('esm ok', generate(seedFor('k', 1)).pattern)
+          "

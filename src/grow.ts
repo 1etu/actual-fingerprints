@@ -3,7 +3,7 @@ import { erode, NB, NF } from './field'
 import { PAD, tapx, tapy, kernels } from './gabor'
 import type { Spec } from './pattern'
 
-export function grow(seed: string, spec: Spec, mask: Uint8Array, ids: Uint8Array, w: number, h: number, density: number) {
+export function grow(seed: string, spec: Spec, mask: Uint8Array, ids: Uint8Array, w: number, h: number) {
   const pw = w + 2 * PAD, ph = h + 2 * PAD
   const st = new Int8Array(pw * ph)
 
@@ -63,7 +63,7 @@ export function grow(seed: string, spec: Spec, mask: Uint8Array, ids: Uint8Array
   const dirty = new Uint8Array(nb), active = new Uint8Array(nb)
   const r = fork(seed, 'seeds')
   const inner = erode(mask, w, h, 15)
-  const n = Math.round((20 + 50 * density) * m / 83200)
+  const n = Math.round(45 * m / 83200)
   const sx = new Int32Array(n + 4), sy = new Int32Array(n + 4)
   let ns = 0
   const put = (x: number, y: number) => {

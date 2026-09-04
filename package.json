@@ -1,0 +1,51 @@
+{
+  "name": "actual-fingerprints",
+  "version": "0.1.0",
+  "description": "Deterministic synthetic fingerprints from a seed. Pixels, minutiae, SVG, PNG.",
+  "keywords": [
+    "fingerprint",
+    "synthetic",
+    "procedural",
+    "deterministic",
+    "biometric",
+    "png",
+    "svg"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "tsc && vitest run",
+    "bench": "pnpm build && node bench/generate.js",
+    "prepublishOnly": "pnpm build && pnpm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  }
+}

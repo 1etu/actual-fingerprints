@@ -4,55 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Grab your fingerprint</title>
-<meta name="description" content="Type a handle and get the synthetic fingerprint that belongs to it, grown in your browser. Same handle, same print, anywhere.">
+<meta name="description" content="Type a handle and watch the fingerprint that belongs to it grow onto a record sheet, in your browser.">
 <link rel="icon" href="../icon.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="page">
 
 <header>
-  <a class="home" href="../">actual-fingerprints</a>
+  <a href="../">actual-fingerprints</a>
   <nav>
     <iframe src="https://ghbtns.com/github-btn.html?user=1etu&repo=actual-fingerprints&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20" title="Star actual-fingerprints on GitHub"></iframe>
     <a href="../">Research &amp; Papers</a>
   </nav>
 </header>
 
-<main>
-<div class="text">
-  <h1>Grab your fingerprint</h1>
-  <p>Type a handle, get its fingerprint.</p>
+<form id="sheet">
+  <table>
+    <tr><th colspan="3">FINGERPRINT RECORD SHEET</th></tr>
+    <tr>
+      <td class="name">Name: @<input type="text" id="handle" spellcheck="false" autocomplete="off" autocapitalize="none" aria-label="Handle"></td>
+      <td>Class: <span id="m-class"></span></td>
+      <td>Date: <span id="m-date"></span></td>
+    </tr>
+    <tr>
+      <td colspan="3" class="box">
+        <div class="label">1. Thumb</div>
+        <div class="frame" tabindex="0">
+          <canvas id="stage" width="320" height="400" aria-label="The fingerprint for this handle."></canvas>
+          <div class="tools" id="tools" hidden>
+            <button type="button" id="png">png</button>
+            <button type="button" id="svg">svg</button>
+            <button type="button" id="share">share</button>
+          </div>
+        </div>
+        <div class="hint" id="hint">Type a handle and press enter</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="name">Minutiae: <span id="m-count"></span></td>
+      <td colspan="2">Ref: <span id="m-link"></span></td>
+    </tr>
+  </table>
+</form>
 
-  <form id="form">
-    <label for="handle">@</label><input type="text" id="handle" placeholder="handle" spellcheck="false" autocomplete="off" autocapitalize="none">
-    <button type="submit">Grab</button>
-  </form>
-
-  <dl id="meta" hidden>
-    <dt>Handle</dt><dd id="m-handle"></dd>
-    <dt>Class</dt><dd id="m-class"></dd>
-    <dt>Minutiae</dt><dd id="m-count"></dd>
-    <dt>Link</dt><dd id="m-link"></dd>
-  </dl>
-  <p class="note" id="note" role="status" aria-live="polite"></p>
-</div>
-
-<div class="frame" tabindex="0">
-  <canvas id="stage" width="320" height="400" aria-label="The fingerprint for this handle."></canvas>
-  <div class="tools" id="tools" hidden>
-    <button type="button" id="png">PNG</button>
-    <button type="button" id="svg">SVG</button>
-    <button type="button" id="share">Share</button>
-  </div>
-</div>
-</main>
-
-<footer>Generated in your browser. Nothing is stored. <a href="../">How it works</a></footer>
-
-</div>
+<footer>Grown in your browser. Nothing is stored. <a href="../">How it works</a></footer>
 
 <script src="../demo.js"></script>
+<script src="paper.js"></script>
 <script src="site.js"></script>
 </body>
 </html>

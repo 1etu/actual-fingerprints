@@ -2,43 +2,91 @@
   var handle = document.getElementById('handle')
   var canvas = document.getElementById('stage')
   var ctx = canvas.getContext('2d')
-  var meta = document.getElementById('meta')
   var tools = document.getElementById('tools')
-  var note = document.getElementById('note')
+  var hint = document.getElementById('hint')
   var print = null
   var url = ''
+  var frame = null
   var timer = null
 
   function say(text) {
-    note.textContent = text
+    hint.textContent = text
     if (timer) clearTimeout(timer)
     timer = setTimeout(function () {
-      note.textContent = ''
+      hint.textContent = ''
     }, 2000)
+  }
+
+  function grow(pressed) {
+    var w = pressed.width, h = pressed.height, n = w * h
+    var seed = 0
+    for (var c = 0; c < pressed.seed.length; c++) seed = (seed * 31 + pressed.seed.charCodeAt(c)) >>> 0
+    var pts = []
+    while (pts.length < 6) {
+      seed = (seed * 1664525 + 1013904223) >>> 0
+      var x = seed % w
+      seed = (seed * 1664525 + 1013904223) >>> 0
+      var y = seed % h
+      if (pressed.mask[y * w + x]) pts.push(x, y)
+    }
+    var dist = new Float32Array(n)
+    var far = 0
+    for (var i = 0; i < n; i++) {
+      var px = i % w, py = (i - px) / w
+      var best = 1e9
+      for (var k = 0; k < pts.length; k += 2) {
+        var dx = px - pts[k], dy = py - pts[k + 1]
+        var dd = dx * dx + dy * dy
+        if (dd < best) best = dd
+      }
+      dist[i] = Math.sqrt(best)
+      if (pressed.mask[i] && dist[i] > far) far = dist[i]
+    }
+    var img = ctx.createImageData(w, h)
+    var d = img.data
+    var t0 = performance.now()
+    if (frame) cancelAnimationFrame(frame)
+    var tick = function (now) {
+      var t = Math.min(1, (now - t0) / 1600)
+      var edge = t * (far + 24)
+      for (var j = 0, o = 0; j < n; j++, o += 4) {
+        var a = 0
+        if (pressed.mask[j]) {
+          var v = pressed.pixels[j]
+          var ink = v < 232 ? (232 - v) / 232 : 0
+          var r = (edge - dist[j]) / 24
+          if (r > 1) r = 1
+          if (r > 0) a = ink * r
+        }
+        d[o + 3] = a * 255
+      }
+      ctx.putImageData(img, 0, 0)
+      if (t < 1) frame = requestAnimationFrame(tick)
+      else frame = null
+    }
+    frame = requestAnimationFrame(tick)
   }
 
   function show(s) {
     print = AF.generate(s)
     var pressed = AF.ink(print)
-    ctx.putImageData(new ImageData(AF.toRGBA(pressed), pressed.width, pressed.height), 0, 0)
     var hash = '#' + encodeURIComponent(s)
     history.replaceState(null, '', hash)
     url = location.origin + location.pathname + hash
     document.title = '@' + s
-    document.getElementById('m-handle').textContent = '@' + s
     document.getElementById('m-class').textContent = print.pattern.replace('-', ' ')
     document.getElementById('m-count').textContent = print.minutiae.length
     document.getElementById('m-link').textContent = url.replace(/^https?:\/\//, '')
-    meta.hidden = false
+    grow(pressed)
     tools.hidden = false
-    note.textContent = ''
+    hint.textContent = ''
   }
 
   function grab(value) {
     var s = value.trim().replace(/^@/, '').toLowerCase()
     if (!s) return
     handle.value = s
-    note.textContent = 'growing'
+    hint.textContent = 'rolling'
     setTimeout(function () {
       show(s)
     }, 16)
@@ -51,7 +99,14 @@
     a.click()
   }
 
-  document.getElementById('form').addEventListener('submit', function (e) {
+  var now = new Date()
+  document.getElementById('m-date').textContent = [
+    String(now.getDate()).padStart(2, '0'),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    now.getFullYear(),
+  ].join('/')
+
+  document.getElementById('sheet').addEventListener('submit', function (e) {
     e.preventDefault()
     grab(handle.value)
   })

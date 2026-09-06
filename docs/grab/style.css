@@ -1,140 +1,131 @@
 body {
   margin: 0;
-  background: #fff;
-  color: #000;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  background: #e3d9c0;
+  background-size: cover;
+  background-attachment: fixed;
+  color: #1b1a17;
+  font-family: "Times New Roman", Times, serif;
   font-size: 15px;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
-#page {
-  max-width: 52rem;
-  margin: 0 auto;
-  padding: 0 1.5rem 4rem;
-}
-
-a { color: #000; text-decoration: none; }
-a:hover { text-decoration: underline; text-underline-offset: 0.15em; }
-a:focus { outline: 1px solid #000; outline-offset: 2px; }
+a { color: #1b1a17; }
+a:focus { outline: 1px dotted #1b1a17; outline-offset: 2px; }
 
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.4rem 0 0.9rem;
-  border-bottom: 1px solid #000;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-nav { display: flex; align-items: center; gap: 1.5rem; }
-nav iframe { display: block; }
-
-main {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 4rem;
-  padding-top: 5rem;
-}
-
-h1 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-  margin: 0 0 1rem;
-}
-.text p { margin: 0 0 2.5rem; max-width: 22rem; }
-
-form { display: flex; align-items: baseline; margin: 0 0 3rem; }
-label { margin-right: 0.3rem; }
-input[type="text"] {
-  font: inherit;
-  flex: 1 1 8rem;
-  min-width: 0;
-  max-width: 14rem;
-  padding: 0.2rem 0;
-  border: 0;
-  border-bottom: 1px solid #000;
-  border-radius: 0;
-  background: #fff;
-  color: #000;
-}
-input[type="text"]:focus { outline: none; border-bottom-width: 2px; margin-bottom: -1px; }
-input::placeholder { color: #999; }
-
-button {
-  font: inherit;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #000;
-  background: #fff;
-  border: 1px solid #000;
-  border-radius: 0;
-  padding: 0.3rem 0.8rem;
-  cursor: pointer;
-}
-button:hover { background: #000; color: #fff; }
-button:focus { outline: 1px solid #000; outline-offset: 2px; }
-form button { margin-left: 1rem; }
-
-dl {
-  display: grid;
-  grid-template-columns: 5rem 1fr;
-  gap: 0.35rem 1rem;
-  margin: 0;
-  padding-top: 1rem;
-  border-top: 1px solid #000;
+  padding: 1rem 1.5rem;
+  font-family: "Courier New", Courier, monospace;
   font-size: 0.8rem;
-  max-width: 22rem;
 }
-dt { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.68rem; padding-top: 0.15em; }
-dl[hidden] { display: none; }
-dd { margin: 0; overflow-wrap: anywhere; }
+header a { text-decoration: none; }
+header a:hover { text-decoration: underline; }
+nav { display: flex; align-items: center; gap: 1.2rem; }
+nav iframe { display: block; opacity: 0.85; }
 
-.note { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 1rem 0 0; min-height: 1.2rem; }
+#sheet {
+  max-width: 40rem;
+  margin: 3rem auto 0;
+  padding: 0 1rem;
+}
 
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #2a2823;
+}
+th, td {
+  border: 1px solid #2a2823;
+  padding: 0.3rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  font-weight: normal;
+}
+th {
+  text-align: center;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  padding: 0.25rem;
+}
+td span, input {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.95rem;
+}
+.name { width: 45%; }
+
+input {
+  width: 9rem;
+  max-width: 70%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+}
+input:focus { outline: none; }
+
+.box { padding: 0.3rem 0.6rem 0.8rem; }
+.label { font-size: 0.9rem; margin-bottom: 0.4rem; }
 .frame {
   position: relative;
   width: 320px;
   max-width: 100%;
-  border: 1px solid #000;
+  margin: 0 auto;
   line-height: 0;
 }
-.frame:focus { outline: 1px solid #000; outline-offset: 2px; }
-.frame canvas { width: 100%; height: auto; display: block; background: #fff; }
+.frame:focus { outline: none; }
+.frame canvas { width: 100%; height: auto; display: block; }
 .tools {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 1rem;
+  bottom: 0.5rem;
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  line-height: 1.45;
+  gap: 1.2rem;
+  line-height: 1.4;
   visibility: hidden;
 }
 .frame:hover .tools, .frame:focus-within .tools { visibility: visible; }
 .tools[hidden] { display: none; }
+button {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.85rem;
+  color: #1b1a17;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+button:focus { outline: 1px dotted #1b1a17; outline-offset: 2px; }
+.hint {
+  text-align: center;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  min-height: 1.2rem;
+}
 
 footer {
-  margin-top: 6rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid #000;
-  font-size: 0.72rem;
-  letter-spacing: 0.02em;
-  max-width: 30rem;
+  max-width: 40rem;
+  margin: 1.2rem auto 3rem;
+  padding: 0 1rem;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.75rem;
 }
-footer a { text-decoration: underline; text-underline-offset: 0.15em; }
 
 @media (hover: none) {
   .tools { visibility: visible; }
 }
 
-@media (max-width: 40rem) {
-  main { grid-template-columns: 1fr; gap: 2.5rem; padding-top: 2.5rem; }
-  .frame { order: -1; }
-  header { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
-  footer { margin-top: 4rem; }
+@media (max-width: 36rem) {
+  header { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+  #sheet { margin-top: 1.5rem; }
+  td, th { padding: 0.25rem 0.4rem; font-size: 0.85rem; }
+  .name { width: auto; }
 }

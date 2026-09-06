@@ -1,0 +1,111 @@
+body {
+  margin: 0;
+  background: #fff;
+  color: #000;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  line-height: 1.5;
+}
+
+#page {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+}
+
+a { color: #0000ee; }
+a:visited { color: #551a8b; }
+a:focus { outline: 1px dotted #000; outline-offset: 1px; }
+
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 3px double #000;
+  font-size: 0.9rem;
+}
+.home { color: #000; text-decoration: none; font-weight: bold; }
+.home:visited { color: #000; }
+.right { display: flex; align-items: center; gap: 0.7rem; }
+.right iframe { display: block; }
+
+.btn, button {
+  font: inherit;
+  font-size: 0.82rem;
+  color: #000;
+  text-decoration: none;
+  background: #fff;
+  border: 1px solid #000;
+  border-radius: 0;
+  padding: 0.1rem 0.6rem;
+  box-shadow: 2px 2px 0 #000;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:visited { color: #000; }
+.btn:hover, button:hover { background: #e6e6e6; }
+.btn:active, button:active { box-shadow: none; transform: translate(2px, 2px); }
+
+main { text-align: center; padding-top: 2.5rem; }
+
+h1 {
+  font-size: 1.7rem;
+  font-weight: bold;
+  margin: 0 0 0.5rem;
+}
+.lead { margin: 0 auto 1.6rem; max-width: 30rem; }
+
+form { margin: 0 0 1.8rem; }
+.at { font-size: 1.1rem; margin-right: 0.15rem; }
+input[type="text"] {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1rem;
+  width: 13rem;
+  max-width: 60%;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid #000;
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+}
+input[type="text"]:focus { outline: 1px dotted #000; outline-offset: 1px; }
+form button { margin-left: 0.4rem; padding: 0.2rem 0.7rem; }
+
+.frame {
+  position: relative;
+  display: inline-block;
+  border: 1px solid #000;
+  line-height: 0;
+}
+.frame:focus { outline: 1px dotted #000; outline-offset: 2px; }
+.frame canvas { width: 320px; max-width: 100%; height: auto; display: block; background: #fff; }
+.tools {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.9rem;
+  line-height: 1.5;
+  visibility: hidden;
+}
+.frame:hover .tools, .frame:focus-within .tools { visibility: visible; }
+.tools button { margin: 0 0.25rem; min-width: 3.4rem; }
+
+.meta { margin: 0.7rem 0 0; }
+.meta code { font-family: "Courier New", Courier, monospace; font-size: 0.95em; }
+.note { font-size: 0.85rem; min-height: 1.3rem; margin: 0.2rem 0 0; }
+
+.foot {
+  font-size: 0.8rem;
+  text-align: center;
+  margin: 4rem 0 0;
+}
+
+@media (hover: none) {
+  .tools { visibility: visible; }
+}
+
+@media (max-width: 30rem) {
+  .bar { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+  main { padding-top: 1.5rem; }
+}

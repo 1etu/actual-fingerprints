@@ -3,7 +3,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #e0d5bb url(paper.jpg) center / cover fixed;
+  background: #e0d5bb url(paper.jpg?v=3) center / cover fixed;
   color: #1b1a17;
   font-family: "Times New Roman", Times, serif;
   font-size: 15px;

@@ -1,9 +1,9 @@
 (function () {
   var handle = document.getElementById('handle')
-  var box = document.getElementById('print')
   var canvas = document.getElementById('stage')
   var ctx = canvas.getContext('2d')
   var meta = document.getElementById('meta')
+  var tools = document.getElementById('tools')
   var note = document.getElementById('note')
   var print = null
   var url = ''
@@ -25,17 +25,20 @@
     history.replaceState(null, '', hash)
     url = location.origin + location.pathname + hash
     document.title = '@' + s
-    meta.innerHTML = '<code>@' + s.replace(/[&<>]/g, function (c) {
-      return c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'
-    }) + '</code>, ' + print.pattern.replace('-', ' ') + ', ' + print.minutiae.length + ' minutiae'
+    document.getElementById('m-handle').textContent = '@' + s
+    document.getElementById('m-class').textContent = print.pattern.replace('-', ' ')
+    document.getElementById('m-count').textContent = print.minutiae.length
+    document.getElementById('m-link').textContent = url.replace(/^https?:\/\//, '')
+    meta.hidden = false
+    tools.hidden = false
+    note.textContent = ''
   }
 
   function grab(value) {
     var s = value.trim().replace(/^@/, '').toLowerCase()
     if (!s) return
     handle.value = s
-    box.hidden = false
-    meta.textContent = 'growing'
+    note.textContent = 'growing'
     setTimeout(function () {
       show(s)
     }, 16)

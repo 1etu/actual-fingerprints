@@ -11,38 +11,44 @@
 <body>
 <div id="page">
 
-<div class="bar">
+<header>
   <a class="home" href="../">actual-fingerprints</a>
-  <span class="right">
+  <nav>
     <iframe src="https://ghbtns.com/github-btn.html?user=1etu&repo=actual-fingerprints&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20" title="Star actual-fingerprints on GitHub"></iframe>
-    <a class="btn" href="../">Research &amp; Papers</a>
-  </span>
-</div>
+    <a href="../">Research &amp; Papers</a>
+  </nav>
+</header>
 
 <main>
-<h1>Grab your fingerprint</h1>
-<p class="lead">Write your handle. The print that belongs to it is grown here, in your browser, and no other handle can produce it.</p>
+<div class="text">
+  <h1>Grab your fingerprint</h1>
+  <p>Type a handle, get its fingerprint.</p>
 
-<form id="form">
-  <span class="at">@</span><input type="text" id="handle" placeholder="handle" spellcheck="false" autocomplete="off" autocapitalize="none">
-  <button type="submit">Grab</button>
-</form>
+  <form id="form">
+    <label for="handle">@</label><input type="text" id="handle" placeholder="handle" spellcheck="false" autocomplete="off" autocapitalize="none">
+    <button type="submit">Grab</button>
+  </form>
 
-<div id="print" hidden>
-  <div class="frame" tabindex="0">
-    <canvas id="stage" width="320" height="400" aria-label="The fingerprint that belongs to this handle."></canvas>
-    <div class="tools">
-      <button type="button" id="png">PNG</button>
-      <button type="button" id="svg">SVG</button>
-      <button type="button" id="share">Share</button>
-    </div>
-  </div>
-  <p class="meta" id="meta"></p>
+  <dl id="meta" hidden>
+    <dt>Handle</dt><dd id="m-handle"></dd>
+    <dt>Class</dt><dd id="m-class"></dd>
+    <dt>Minutiae</dt><dd id="m-count"></dd>
+    <dt>Link</dt><dd id="m-link"></dd>
+  </dl>
   <p class="note" id="note" role="status" aria-live="polite"></p>
+</div>
+
+<div class="frame" tabindex="0">
+  <canvas id="stage" width="320" height="400" aria-label="The fingerprint for this handle."></canvas>
+  <div class="tools" id="tools" hidden>
+    <button type="button" id="png">PNG</button>
+    <button type="button" id="svg">SVG</button>
+    <button type="button" id="share">Share</button>
+  </div>
 </div>
 </main>
 
-<p class="foot">Nothing is sent and nothing is stored. The handle is the seed and the print is the arithmetic. <a href="../">How it works.</a></p>
+<footer>Generated in your browser. Nothing is stored. <a href="../">How it works</a></footer>
 
 </div>
 

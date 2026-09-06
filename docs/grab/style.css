@@ -1,9 +1,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #e3d9c0;
-  background-size: cover;
-  background-attachment: fixed;
+  background: #e0d5bb url(paper.jpg) center / cover fixed;
   color: #1b1a17;
   font-family: "Times New Roman", Times, serif;
   font-size: 15px;

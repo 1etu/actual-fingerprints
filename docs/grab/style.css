@@ -1,6 +1,8 @@
 body {
   margin: 0;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #e0d5bb url(paper.jpg) center / cover fixed;
   color: #1b1a17;
   font-family: "Times New Roman", Times, serif;
@@ -25,9 +27,11 @@ nav { display: flex; align-items: center; gap: 1.2rem; }
 nav iframe { display: block; opacity: 0.85; }
 
 #sheet {
+  width: 100%;
   max-width: 40rem;
-  margin: 3rem auto 0;
-  padding: 0 1rem;
+  margin: auto;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
 }
 
 table {
@@ -110,9 +114,11 @@ button:focus { outline: 1px dotted #1b1a17; outline-offset: 2px; }
 }
 
 footer {
+  width: 100%;
   max-width: 40rem;
-  margin: 1.2rem auto 3rem;
-  padding: 0 1rem;
+  margin: 0 auto;
+  padding: 0 1rem 1.2rem;
+  box-sizing: border-box;
   font-family: "Courier New", Courier, monospace;
   font-size: 0.75rem;
 }
@@ -123,7 +129,6 @@ footer {
 
 @media (max-width: 36rem) {
   header { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
-  #sheet { margin-top: 1.5rem; }
   td, th { padding: 0.25rem 0.4rem; font-size: 0.85rem; }
   .name { width: auto; }
 }

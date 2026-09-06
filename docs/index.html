@@ -40,7 +40,7 @@
 <h1>actual-fingerprints</h1>
 <p class="authors">ege türker</p>
 <p class="affil">September 2026</p>
-<p class="links">[ <a href="https://github.com/1etu/actual-fingerprints">Code</a> ] [ <a href="https://github.com/1etu/actual-fingerprints#readme">README</a> ] [ <a href="population.json">Data</a> ] [ <a href="#demo">Demo</a> ]</p>
+<p class="links">[ <a href="https://github.com/1etu/actual-fingerprints">Code</a> ] [ <a href="https://github.com/1etu/actual-fingerprints#readme">README</a> ] [ <a href="population.json">Data</a> ] [ <a href="#demo">Demo</a> ] [ <a href="#grab">Grab yours</a> ]</p>
 
 <p class="teaser"><img src="icon.png" width="160" height="160" alt="The fingerprint generated from the seed actual-fingerprints, a left loop with 44 minutiae."></p>
 <p class="caption" style="text-align:center">The fingerprint for the seed <code>actual-fingerprints</code>.</p>
@@ -55,6 +55,7 @@
 <ol>
   <li><a href="#produces">What it produces</a></li>
   <li><a href="#demo">Try it</a></li>
+  <li><a href="#grab">Grab your fingerprint</a></li>
   <li><a href="#classes">Pattern classes</a></li>
   <li><a href="#field">Orientation field</a></li>
   <li><a href="#growth">Ridge growth</a></li>
@@ -81,7 +82,7 @@
   <p class="caption"><b>Figure 1:</b> Forty prints from consecutive seeds <code>citizen-2001</code> to <code>citizen-2040</code>, rendered through the impression pass. Loops, whorls and arches appear roughly in the proportions found in the general population because the class is drawn from those frequencies.</p>
 </div>
 
-<p>The raw output is a clean ridge map. A second pass, described in section 7, adds what an actual impression leaves behind: uneven pressure, pores, dry patches, flexion creases and paper texture.</p>
+<p>The raw output is a clean ridge map. A second pass, described in section 8, adds what an actual impression leaves behind: uneven pressure, pores, dry patches, flexion creases and paper texture.</p>
 
 <div class="figure">
   <img src="detail.png" alt="A clean ridge map beside the same region rendered as a pressed print." loading="lazy">
@@ -132,8 +133,38 @@
 
 <hr>
 
+<section id="grab">
+<h2>3. Grab your fingerprint</h2>
+<p>Every string owns exactly one print, so a username already has one waiting. Type yours and the library grows it here, in your browser. Nothing is sent anywhere and nothing is stored, because there is no registry to store it in: the claim is the arithmetic. Anyone who opens the link this produces regenerates the same print from the same name, and no other name produces it.</p>
+
+<div class="demo">
+  <form id="grab-form">
+    <label for="grab-name">Username</label>
+    <input type="text" id="grab-name" placeholder="yourname" spellcheck="false" autocomplete="off">
+    <button type="submit">Grab</button>
+  </form>
+  <div id="grab-result" hidden>
+    <div class="stage">
+      <canvas id="grab-stage" width="320" height="400" aria-label="The fingerprint that belongs to this username."></canvas>
+      <div class="readout" id="grab-out" role="status" aria-live="polite"></div>
+    </div>
+    <p class="share">
+      <input type="text" id="grab-link" readonly aria-label="Permanent link to this fingerprint.">
+      <button type="button" id="grab-copy">Copy link</button>
+      <button type="button" id="grab-png">Download PNG</button>
+      <button type="button" id="grab-svg">Download SVG</button>
+    </p>
+  </div>
+</div>
+
+<p>Names are trimmed, lowercased and stripped of a leading <code>@</code> before hashing, so <code>@Alice</code> and <code>alice</code> get the same print. The PNG is the pressed impression at 320 by 400 pixels and the SVG is the clean ridge map traced as paths. Since anyone can type any name, the print is a picture that belongs to a name, not a proof that you own the name.</p>
+<p class="top">[ <a href="#contents">contents</a> ]</p>
+</section>
+
+<hr>
+
 <section id="classes">
-<h2>3. Pattern classes</h2>
+<h2>4. Pattern classes</h2>
 <p>The first draw from the seeded stream picks a class. The weights approximate the distribution reported for the general population, with whorls split into their Henry subtypes.</p>
 
 <div class="tablewrap">
@@ -163,7 +194,7 @@
 <hr>
 
 <section id="field">
-<h2>4. Orientation field</h2>
+<h2>5. Orientation field</h2>
 <p>Ridge direction at every pixel comes from the zero-pole model of Sherlock and Monro. Cores act as zeros and deltas as poles of a complex function whose argument, halved, gives the ridge angle.</p>
 
 <p class="eq">theta(p) = tilt + 1/2 &middot; ( &Sigma;<sub>cores</sub> g(arg(p &minus; c)) &minus; &Sigma;<sub>deltas</sub> g(arg(p &minus; d)) )</p>
@@ -187,7 +218,7 @@
 <hr>
 
 <section id="growth">
-<h2>5. Ridge growth</h2>
+<h2>6. Ridge growth</h2>
 <p>This is where the print actually appears. The state is a ternary image: one for ridge, minus one for valley, zero for untouched. It begins empty apart from about 45 nucleation points, three by three blocks placed by Poisson disk sampling with a minimum spacing of two ridge periods, plus one on each core and delta. Every pass replaces each pixel inside the silhouette with the sign of its Gabor response, where the kernel is selected by that pixel's own orientation and period bins.</p>
 
 <div class="figure">
@@ -222,7 +253,7 @@
 <hr>
 
 <section id="minutiae">
-<h2>6. Minutiae</h2>
+<h2>7. Minutiae</h2>
 <p>The grey image is thresholded, thinned with the Zhang and Suen algorithm, and cleared of staircase corners. Spurs shorter than ten pixels are pruned from every free end first. Without that step, thinning leaves two-pixel forks on ridge tips that read as bifurcations and the type ratio inverts.</p>
 
 <div class="figure">
@@ -239,7 +270,7 @@
 <hr>
 
 <section id="render">
-<h2>7. Rendering</h2>
+<h2>8. Rendering</h2>
 
 <h3>Vector output</h3>
 <p>The tracer runs marching squares over the binary ridge map with a fixed saddle rule, links segments through integer edge identifiers rather than a hash map, and simplifies each closed contour with the Douglas-Peucker algorithm. Output is a single path with the even-odd fill rule, which is exactly correct here because contours from a binary image never cross and nesting strictly alternates ridge and valley.</p>
@@ -284,7 +315,7 @@
 <hr>
 
 <section id="matching">
-<h2>8. Matching</h2>
+<h2>9. Matching</h2>
 <p>The matcher follows the alignment approach of Ratha and colleagues. For every pair of minutiae, one taken from each print, it hypothesises the rotation and translation mapping one onto the other, transforms the entire first set, and counts one-to-one matches within ten pixels and twenty-five degrees, scoring a type mismatch at half weight. The second set is bucketed into a sixteen pixel grid so each lookup touches at most four cells, and a hypothesis is abandoned as soon as it cannot beat the best already found.</p>
 
 <p class="eq">score = matched<sup>2</sup> / ( |A| &middot; |B| )</p>
@@ -313,7 +344,7 @@
 <hr>
 
 <section id="determinism">
-<h2>9. Determinism</h2>
+<h2>10. Determinism</h2>
 <p>The guarantee is that a seed yields identical bytes on every machine and every engine. Two things threaten that in JavaScript.</p>
 
 <p>The obvious one is the ambient random source, and nothing here touches it. All randomness comes from a hash of the seed string feeding an sfc32 generator, with independent sub-streams forked by label for the class, the silhouette, the period map, the nucleation points and the impression pass. Sub-streams are derived from the label rather than the parent's draw count, so adding a draw in one stage cannot shift another.</p>
@@ -329,7 +360,7 @@
 <hr>
 
 <section id="performance">
-<h2>10. Performance</h2>
+<h2>11. Performance</h2>
 <p>Measured from the built package on a laptop, Node 22.23, single threaded, after warm-up.</p>
 
 <div class="figure">
@@ -346,7 +377,7 @@
 <hr>
 
 <section id="statistics">
-<h2>11. Population statistics</h2>
+<h2>12. Population statistics</h2>
 <p>The figures below come from one thousand consecutive seeds. The same run is executed by the test suite as a distribution check. The raw data is in <a href="population.json">population.json</a>.</p>
 
 <div class="figure">
@@ -378,7 +409,7 @@
 <hr>
 
 <section id="limits">
-<h2>12. Limitations</h2>
+<h2>13. Limitations</h2>
 <ul>
   <li><b>One impression per finger.</b> There is no model of a partial, rotated or smudged lift of the same print. The impression pass always renders the whole fingertip with identical geometry.</li>
   <li><b>Minutiae count is emergent, not controllable.</b> The obvious lever, the number of nucleation points, does not work: raising it from 5 to 200 moves the mean count from 47.8 down to 40.7, a change smaller than the variation between seeds and in the wrong direction. The field, not the seeding, determines where fronts collide. A parameter that claimed to control this was removed rather than left in place doing nothing.</li>
@@ -393,7 +424,7 @@
 <hr>
 
 <section id="api">
-<h2>13. Interface</h2>
+<h2>14. Interface</h2>
 
 <pre>import { generate, ink, toSVG, compare } from 'actual-fingerprints'
 import { toPNG } from 'actual-fingerprints/node'
@@ -447,7 +478,7 @@ compare(print, generate('citizen-4821')).score   // 1</pre>
 <hr>
 
 <section id="refs">
-<h2>14. References</h2>
+<h2>15. References</h2>
 <ol class="refs">
   <li>R. Cappelli, D. Maio, D. Maltoni. Synthetic fingerprint-database generation. <i>International Conference on Pattern Recognition</i>, 2002. Also the synthetic generation chapter of the <i>Handbook of Fingerprint Recognition</i>.</li>
   <li>B. G. Sherlock, D. M. Monro. A model for interpreting fingerprint topology. <i>Pattern Recognition</i> 26(7), 1993.</li>

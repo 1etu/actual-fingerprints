@@ -253,4 +253,79 @@
     match()
   })
   match()
+
+  var name = document.getElementById('grab-name')
+  var result = document.getElementById('grab-result')
+  var sheet = document.getElementById('grab-stage')
+  var sctx = sheet.getContext('2d')
+  var grabOut = document.getElementById('grab-out')
+  var link = document.getElementById('grab-link')
+  var copy = document.getElementById('grab-copy')
+  var grabbed = null
+
+  function show(s) {
+    var print = AF.generate(s)
+    var pressed = AF.ink(print)
+    sheet.width = pressed.width
+    sheet.height = pressed.height
+    sctx.putImageData(new ImageData(AF.toRGBA(pressed), pressed.width, pressed.height), 0, 0)
+    grabbed = print
+    var hash = '#grab=' + encodeURIComponent(s)
+    history.replaceState(null, '', hash)
+    link.value = location.origin + location.pathname + hash
+    grabOut.innerHTML = rows([
+      ['name', esc(s)],
+      ['class', print.pattern],
+      ['minutiae', print.minutiae.length],
+      ['ridge period', print.period.toFixed(2) + ' px'],
+    ])
+  }
+
+  function grab(value) {
+    var s = value.trim().replace(/^@/, '').toLowerCase()
+    if (!s) return
+    name.value = s
+    result.hidden = false
+    grabOut.innerHTML = rows([['status', 'generating']])
+    setTimeout(function () {
+      show(s)
+    }, 16)
+  }
+
+  function download(file, href) {
+    var a = document.createElement('a')
+    a.href = href
+    a.download = file
+    a.click()
+  }
+
+  document.getElementById('grab-form').addEventListener('submit', function (e) {
+    e.preventDefault()
+    grab(name.value)
+  })
+  copy.addEventListener('click', function () {
+    link.select()
+    navigator.clipboard.writeText(link.value).catch(function () {
+      document.execCommand('copy')
+    })
+    copy.textContent = 'Copied'
+    setTimeout(function () {
+      copy.textContent = 'Copy link'
+    }, 1500)
+  })
+  document.getElementById('grab-png').addEventListener('click', function () {
+    download(grabbed.seed + '.png', sheet.toDataURL('image/png'))
+  })
+  document.getElementById('grab-svg').addEventListener('click', function () {
+    download(grabbed.seed + '.svg', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(AF.toSVG(grabbed)))
+  })
+
+  var claim = /^#grab=(.+)/.exec(location.hash)
+  if (claim) {
+    grab(decodeURIComponent(claim[1]))
+    var here = document.getElementById('grab')
+    setTimeout(function () {
+      go(here, here.getBoundingClientRect().top + window.scrollY - 10)
+    }, 80)
+  }
 })()

@@ -153,6 +153,9 @@ pre {
 .readout table { border: 0; }
 .readout td { border: 0; border-bottom: 1px dotted #999; padding: 0.05rem 1rem 0.05rem 0; }
 
+.share { margin: 0.6rem 0 0; }
+.share input[type="text"] { width: 100%; margin-bottom: 0.4rem; }
+
 .refs { padding-left: 1.6rem; }
 .refs li { margin-bottom: 0.4rem; }
 
